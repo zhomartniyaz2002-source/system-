@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Система: ежедневные квесты</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;800&display=swap">
+<style>
+:root{
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#e9eef8;--panel:#ffffffcc;--ink:#12203a;--mute:#5a6b8c;--line:#2f6bff;--glow:#2f6bff33;--acc:#2f6bff;--bad:#d6334a;--ok:#0f9d6e;
+  --font:"Exo 2",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#050a18;--panel:#0b1530cc;--ink:#e6efff;--mute:#8aa0c8;--line:#3d8bff;--glow:#3d8bff44;--acc:#5aa2ff;--bad:#ff5470;--ok:#3ddca0;}}
+:root[data-theme="dark"]{--bg:#050a18;--panel:#0b1530cc;--ink:#e6efff;--mute:#8aa0c8;--line:#3d8bff;--glow:#3d8bff44;--acc:#5aa2ff;--bad:#ff5470;--ok:#3ddca0;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;
+  background-image:radial-gradient(ellipse at 50% -10%,var(--glow),transparent 60%)}
+main{max-width:520px;margin:0 auto;padding:16px}
+.win{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;margin-bottom:16px;
+  box-shadow:0 0 18px var(--glow),inset 0 0 18px var(--glow)}
+h1,h2{margin:0;font-weight:800;letter-spacing:.02em}
+h1{font-size:15px;color:var(--acc);text-align:center;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:14px}
+h2{font-size:16px;margin-bottom:10px}
+.top{display:flex;align-items:baseline;justify-content:space-between}
+.lvl{font-size:44px;font-weight:800;line-height:1}
+.lvl small{font-size:13px;color:var(--mute);font-weight:600;margin-right:6px}
+.rank{font-size:34px;font-weight:800;color:var(--acc);text-shadow:0 0 12px var(--line)}
+.bar{height:10px;background:var(--glow);border:1px solid var(--line);margin:12px 0 4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc);box-shadow:0 0 10px var(--line);transition:width .4s}
+.meta{display:flex;justify-content:space-between;color:var(--mute);font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{border:1px solid var(--line);padding:8px;text-align:center}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:12px;color:var(--mute)}
+.q{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--glow)}
+.q:last-child{border:0}
+.chk{width:30px;height:30px;flex:none;border:1px solid var(--line);background:transparent;color:var(--ok);font-size:18px;border-radius:3px;cursor:pointer}
+.q.done .chk{background:var(--glow)}
+.q.done .t{text-decoration:line-through;color:var(--mute)}
+.t{flex:1;font-size:15px}
+.t small{display:block;color:var(--mute);font-size:12px}
+.x{background:none;border:0;color:var(--mute);font-size:20px;cursor:pointer;padding:4px 8px}
+.add{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+input,select,button.go{font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:3px;padding:9px}
+input{flex:1 1 100%}
+select{flex:1;background:var(--bg)}
+button.go{flex:1;background:var(--acc);color:var(--bg);font-weight:800;cursor:pointer;border:0}
+.warn{color:var(--bad);font-size:13px;margin:0 0 8px}
+.foot{text-align:center;font-size:12px;color:var(--mute)}
+.foot button{background:none;border:0;color:var(--mute);text-decoration:underline;font:inherit;cursor:pointer}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translate(-50%,-150%);transition:transform .35s;
+  background:var(--bg);border:1px solid var(--line);box-shadow:0 0 20px var(--line);padding:12px 18px;font-weight:800;z-index:9;text-align:center;max-width:90%}
+#toast.on{transform:translate(-50%,0)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.sb{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px}
+.sb span{width:96px;color:var(--mute)}
+.sb .bar{margin:0;flex:1}
+.sb b{width:28px;text-align:right}
+svg.ch{width:100%;height:auto;display:block}
+.chip{display:block;border:1px solid var(--line);padding:6px 10px;margin-top:6px;font-size:14px;border-radius:3px}
+.chip small{display:block;color:var(--mute);font-size:12px}
+.chip.off{opacity:.35}
+.pg{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;margin:10px 0}
+.pg i{aspect-ratio:1;border:1px solid var(--line);display:block}
+.pg i.ok{background:var(--acc)}
+.pg i.miss{background:var(--bad);opacity:.6}
+.pg i.now{outline:2px solid var(--ink)}
+textarea{width:100%;font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:3px;padding:9px;margin-top:10px}
+.hard{display:flex;gap:8px;align-items:center;font-size:14px}
+.hard input{flex:none;width:auto}
+#em p,#plan p{margin:0 0 8px}
+#em .go{width:100%}
+
+.cambtn{border:1px solid var(--line);background:transparent;color:var(--acc);font:inherit;font-size:13px;padding:6px 8px;border-radius:3px;cursor:pointer}
+#cam{position:fixed;inset:0;background:#000;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+#cam[hidden]{display:none}
+#cam video{width:100%;max-height:70vh;object-fit:contain;transform:scaleX(-1)}
+#ct{font-size:72px;font-weight:800;text-shadow:0 0 16px #3d8bff}
+#cm{font-size:14px;padding:0 16px;text-align:center;min-height:40px;color:#9fc0ff}
+#cc{margin:10px;padding:10px 24px;font:inherit;background:#3d8bff;color:#050a18;border:0;font-weight:800;border-radius:3px}
+</style>
+</head>
+<body>
+<div id="toast" role="status"></div>
+<main>
+  <section class="win">
+    <h1>[ ОКНО СТАТУСА ]</h1>
+    <div class="top"><div class="lvl"><small>УР.</small><span id="lvl">1</span></div><div class="rank" id="rank">E</div></div>
+    <div class="bar"><i id="xpbar"></i></div>
+    <div class="meta"><span id="xptxt"></span><span id="streak"></span></div>
+    <div class="stats">
+      <div class="stat"><b id="s-str">0</b><span>Сила</span></div>
+      <div class="stat"><b id="s-int">0</b><span>Интеллект</span></div>
+      <div class="stat"><b id="s-vit">0</b><span>Выносливость</span></div>
+    </div>
+  </section>
+
+  <section class="win">
+    <h2>Ежедневные квесты</h2>
+    <p class="warn">Невыполненный квест в конце дня отнимает опыт.</p>
+    <div id="list"></div>
+    <div class="add">
+      <select id="ne" aria-label="Упражнение для камеры"><option value="">Без камеры</option><option value="push">Отжимания</option><option value="squat">Приседания</option><option value="sit">Пресс</option></select><input id="nr" type="number" min="0" max="500" placeholder="Повторов (для камеры)" aria-label="Повторов"><input id="nt" maxlength="60" placeholder="Новый квест, например «Отжаться 50 раз»" aria-label="Название квеста">
+      <select id="ns" aria-label="Характеристика">
+        <option value="str">Сила</option><option value="int">Интеллект</option><option value="vit">Выносливость</option>
+      </select>
+      <select id="nx" aria-label="Опыт">
+        <option value="10">10 опыта</option><option value="20" selected>20 опыта</option><option value="40">40 опыта</option>
+      </select>
+      <button class="go" id="addb">Принять квест</button>
+    </div>
+  </section>
+  <section class="win">
+    <h2>Прогресс за 7 дней</h2>
+    <div id="chart"></div>
+  </section>
+  <section class="win"><h2>Титулы</h2><p class="meta" id="title"></p><div id="ach"></div></section>
+  <section class="win"><h2>Экстренный квест</h2><div id="em"></div></section>
+  <section class="win"><h2>План на 66 дней</h2><div id="plan"></div></section>
+  <section class="win"><h2>Режим и резервная копия</h2>
+    <label class="hard"><input type="checkbox" id="hard">Жёсткий режим: штрафы ×2 и бонус за неделю ×2; пропуск обнуляет план</label>
+    <textarea id="bk" rows="3" placeholder="Код резервной копии"></textarea>
+    <div class="add"><button class="go" id="exp">Экспорт</button><button class="go" id="imp">Импорт</button></div>
+  </section>
+  <p class="foot"><button id="reset">Сбросить прогресс</button></p>
+</main>
+<script>
+(function(){
+  var KEY="system-tracker-cam-v1",NAMES={str:"Сила",int:"Интеллект",vit:"Выносливость"};
+  function today(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+  function fresh(){return{lvl:1,xp:0,stats:{str:0,int:0,vit:0},streak:0,day:today(),
+    quests:[{id:1,t:"Отжаться 10 раз",s:"str",xp:20,reps:10,ex:"push",done:false},{id:4,t:"Присесть 20 раз",s:"vit",xp:20,reps:20,ex:"squat",done:false},
+            {id:2,t:"30 минут учёбы или чтения",s:"int",xp:20,done:false},
+            {id:3,t:"Выпить 2 литра воды",s:"vit",xp:10,done:false}],next:5,total:0,ach:{},hist:{}};}
+  var S;
+  try{S=JSON.parse(localStorage.getItem(KEY));}catch(e){S=null;}
+  if(!S||!S.quests)S=fresh();
+  S.total=S.total||0;S.ach=S.ach||{};S.hist=S.hist||{};
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+  function need(l){return 100+(l-1)*50;}
+  function rank(l){return l<5?"E":l<10?"D":l<20?"C":l<30?"B":l<45?"A":"S";}
+  var $=function(i){return document.getElementById(i);};
+  var tt;
+  function toast(m){var t=$("toast");t.textContent=m;t.className="on";clearTimeout(tt);tt=setTimeout(function(){t.className="";},2600);}
+  function gain(n){S.xp+=n;
+    while(S.xp>=need(S.lvl)){S.xp-=need(S.lvl);S.lvl++;toast("УРОВЕНЬ ПОВЫШЕН: "+S.lvl);}}
+  function lose(n){S.xp-=n;
+    while(S.xp<0&&S.lvl>1){S.lvl--;S.xp+=need(S.lvl);}
+    if(S.xp<0)S.xp=0;}
+  function newDay(){
+    if(S.day===today())return;
+    S.hist=S.hist||{};S.hist[S.day]={d:S.quests.filter(function(q){return q.done;}).length,t:S.quests.length};
+    var missed=S.quests.filter(function(q){return!q.done;});
+    if(missed.length){var p=missed.reduce(function(a,q){return a+Math.ceil(q.xp/2);},0);if(S.hard)p*=2;lose(p);S.streak=0;if(S.hard&&S.plan)S.plan.start=dayStart();
+      setTimeout(function(){toast("Штраф за пропуск: −"+p+" опыта");},400);}
+    else if(S.quests.length){S.streak++;if(S.streak%7===0){var bn=S.hard?100:50;gain(bn);setTimeout(function(){toast("Бонус за неделю: +"+bn+" опыта");},400);}}
+    S.quests.forEach(function(q){q.done=false;});
+    S.day=today();save();
+  }
+  function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
+  function key(d){return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+  function chart(){
+    var H=S.hist||{},W=["Вс","Пн","Вт","Ср","Чт","Пт","Сб"],o='<svg class="ch" viewBox="0 0 300 124" role="img" aria-label="Выполненные квесты за 7 дней">',i,d,v,h,x,m;
+    for(i=6;i>=0;i--){
+      d=new Date(Date.now()-i*864e5);
+      v=i?H[key(d)]:{d:S.quests.filter(function(q){return q.done;}).length,t:S.quests.length};
+      v=v||{d:0,t:0};h=v.t?Math.round(v.d/v.t*80):0;x=8+(6-i)*42;
+      o+='<rect x="'+x+'" y="20" width="30" height="80" style="fill:var(--glow)"/>'+
+        '<rect x="'+x+'" y="'+(100-h)+'" width="30" height="'+h+'" style="fill:var(--acc)"/>'+
+        '<text x="'+(x+15)+'" y="14" text-anchor="middle" font-size="11" style="fill:var(--ink)">'+v.d+'/'+v.t+'</text>'+
+        '<text x="'+(x+15)+'" y="118" text-anchor="middle" font-size="11" style="fill:var(--mute)">'+W[d.getDay()]+'</text>';
+    }
+    o+='</svg>';
+    m=Math.max(1,S.stats.str,S.stats.int,S.stats.vit);
+    for(var k in NAMES)o+='<div class="sb"><span>'+NAMES[k]+'</span><div class="bar"><i style="width:'+(S.stats[k]/m*100)+'%"></i></div><b>'+S.stats[k]+'</b></div>';
+    $("chart").innerHTML=o;
+  }
+  function dayStart(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
+  var AC=[["first","Новобранец","Выполнен первый квест",function(){return S.total>=1;}],
+    ["l5","Охотник D-ранга","Достичь 5 уровня",function(){return S.lvl>=5;}],
+    ["s7","Неделя без пропусков","Серия 7 дней",function(){return S.streak>=7;}],
+    ["st10","Закалённый","Любая характеристика достигла 10",function(){return Math.max(S.stats.str,S.stats.int,S.stats.vit)>=10;}],
+    ["l10","Охотник C-ранга","Достичь 10 уровня",function(){return S.lvl>=10;}],
+    ["t100","Сотня","100 выполненных квестов",function(){return S.total>=100;}],
+    ["s30","Монарх дисциплины","Серия 30 дней",function(){return S.streak>=30;}]];
+  function achRender(){var cur="нет",h="";
+    AC.forEach(function(a){var ok=a[3]();if(ok&&!S.ach[a[0]]){S.ach[a[0]]=1;save();toast("Новый титул: "+a[1]);}
+      if(S.ach[a[0]])cur=a[1];
+      h+='<span class="chip'+(S.ach[a[0]]?'':' off')+'">'+a[1]+'<small>'+a[2]+'</small></span>';});
+    $("title").textContent="Текущий титул: "+cur;$("ach").innerHTML=h;}
+  var EM=[["20 приседаний","vit"],["15 отжиманий","str"],["30 скручиваний на пресс","str"],["Планка 1 минута","vit"],["10 минут чтения","int"],["Выучить 5 новых слов","int"]];
+  function emRender(){
+    if(!S.em||S.em.day!==today()){var r=EM[Math.floor(Math.random()*EM.length)];S.em={day:today(),t:r[0],s:r[1],st:"new"};save();}
+    var e=S.em,h="";
+    if(e.st==="new")h='<p>Появился экстренный квест: '+e.t+'. На выполнение 15 минут, награда ×2 (40 опыта).</p><button class="go" data-e="a">Принять</button>';
+    else if(e.st==="run"){var l=Math.round((e.until-Date.now())/1000);
+      if(l<=0){e.st="fail";lose(10);save();toast("Квест провален: −10 опыта");render();return;}
+      h='<p>'+e.t+'</p><p class="rank" style="font-size:28px">'+Math.floor(l/60)+':'+('0'+l%60).slice(-2)+'</p><button class="go" data-e="d">Выполнено</button>';}
+    else h='<p class="meta">'+(e.st==="ok"?"Выполнено: +40 опыта. Новый квест появится завтра.":"Провалено. Новый квест появится завтра.")+'</p>';
+    $("em").innerHTML=h;}
+  function planRender(){var P=S.plan,h="";
+    if(!P)h='<input id="pg" style="width:100%" maxlength="60" placeholder="Цель на 66 дней, например «Стать сильнее»" aria-label="Цель"><button class="go" id="ps" style="width:100%;margin-top:8px">Начать 66 дней</button>';
+    else{var s0=new Date(P.start),idx=Math.round((dayStart()-P.start)/864e5),c="",i,d,v,ok,st;
+      for(i=0;i<66;i++){d=new Date(s0.getFullYear(),s0.getMonth(),s0.getDate()+i);
+        v=i===idx?{d:S.quests.filter(function(q){return q.done;}).length,t:S.quests.length}:S.hist[key(d)];
+        ok=v&&v.t>0&&v.d===v.t;st=i>idx?"":ok?"ok":i<idx?"miss":"";
+        c+='<i class="'+st+(i===idx?' now':'')+'"></i>';}
+      h='<p>Цель: '+esc(P.goal)+'</p><p class="meta">'+(idx>=66?"План завершён!":"День "+(idx+1)+" из 66")+'</p><div class="pg">'+c+'</div><p class="foot"><button id="pr">Закончить план</button></p>';}
+    $("plan").innerHTML=h;}
+  function extras(){achRender();emRender();planRender();$("hard").checked=!!S.hard;}
+  function render(){
+    $("lvl").textContent=S.lvl;$("rank").textContent=rank(S.lvl);chart();extras();
+    var n=need(S.lvl);$("xpbar").style.width=Math.min(100,S.xp/n*100)+"%";
+    $("xptxt").textContent="Опыт "+S.xp+" / "+n;
+    $("streak").textContent="Серия: "+S.streak+" дн.";
+    for(var k in NAMES)$("s-"+k).textContent=S.stats[k];
+    $("list").innerHTML=S.quests.length?S.quests.map(function(q){
+      return '<div class="q'+(q.done?' done':'')+'"><button class="chk" data-c="'+q.id+'" aria-label="Выполнено">'+(q.done?'✓':'')+'</button>'+
+        '<div class="t">'+esc(q.t)+'<small>+'+q.xp+' опыта · '+NAMES[q.s]+'</small></div>'+(q.reps&&q.ex?'<button class="cambtn" data-r="'+q.id+'">📷 '+q.reps+'</button>':'')+
+        '<button class="x" data-d="'+q.id+'" aria-label="Удалить">×</button></div>';
+    }).join(""):'<p class="meta">Квестов нет. Добавь первый ниже.</p>';
+  }
+  $("list").addEventListener("click",function(e){
+    var c=e.target.getAttribute("data-c"),d=e.target.getAttribute("data-d"),r=e.target.getAttribute("data-r");
+    if(r){var qq=S.quests.filter(function(x){return x.id==r;})[0];if(qq&&!qq.done&&window.openCam)window.openCam(qq);return;}
+    if(c){var q=S.quests.filter(function(x){return x.id==c;})[0];
+      if(q){if(!q.done){q.done=true;S.stats[q.s]++;S.total++;gain(q.xp);
+        if(S.quests.every(function(x){return x.done;}))toast("Все квесты выполнены!");}
+        else{q.done=false;S.stats[q.s]=Math.max(0,S.stats[q.s]-1);S.total=Math.max(0,S.total-1);lose(q.xp);}}}
+    if(d)S.quests=S.quests.filter(function(x){return x.id!=d;});
+    save();render();
+  });
+  $("addb").onclick=function(){var t=$("nt").value.trim();if(!t){$("nt").focus();return;}
+    S.quests.push({id:S.next++,t:t,s:$("ns").value,xp:+$("nx").value,reps:+$("nr").value||0,ex:$("ne").value,done:false});
+    $("nt").value="";$("nr").value="";save();render();};
+  $("reset").onclick=function(){if(confirm("Сбросить весь прогресс?")){S=fresh();save();render();}};
+  $("em").addEventListener("click",function(e){var a=e.target.getAttribute("data-e"),m=S.em;
+    if(a==="a"){m.st="run";m.until=Date.now()+9e5;}
+    else if(a==="d"){m.st="ok";S.stats[m.s]++;S.total++;gain(40);toast("Экстренный квест выполнен: +40 опыта");}
+    else return;
+    save();render();});
+  setInterval(function(){if(S.em&&S.em.st==="run")emRender();},1000);
+  $("plan").addEventListener("click",function(e){
+    if(e.target.id==="ps"){var g=$("pg").value.trim();if(!g){$("pg").focus();return;}S.plan={goal:g,start:dayStart()};save();render();}
+    if(e.target.id==="pr"&&confirm("Закончить план?")){S.plan=null;save();render();}});
+  $("hard").onchange=function(){S.hard=this.checked;save();toast(S.hard?"Жёсткий режим включён":"Жёсткий режим выключен");};
+  $("exp").onclick=function(){var c=btoa(unescape(encodeURIComponent(JSON.stringify(S))));$("bk").value=c;
+    try{navigator.clipboard.writeText(c).catch(function(){});}catch(x){}toast("Код создан: скопируй его из поля");};
+  $("imp").onclick=function(){try{var o=JSON.parse(decodeURIComponent(escape(atob($("bk").value.trim()))));if(!o.quests)throw 0;
+    S=o;S.total=S.total||0;S.ach=S.ach||{};S.hist=S.hist||{};save();newDay();render();toast("Прогресс загружен");}catch(x){toast("Неверный код");}};
+  newDay();render();
+})();
+</script>
+<div id="cam" hidden><video id="cv" playsinline muted></video><div id="ct">0</div><div id="cm"></div><button id="cc">Закрыть</button></div>
+<script type="module">
+import {PoseLandmarker,FilesetResolver} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+var EX={
+  push:{L:[11,13,15],R:[12,14,16],low:95,high:150,hint:"Ляг боком к камере: должны быть видны плечо, локоть и кисть."},
+  squat:{L:[23,25,27],R:[24,26,28],low:105,high:160,hint:"Встань боком к камере: должны быть видны бедро, колено и стопа."},
+  sit:{L:[11,23,25],R:[12,24,26],low:85,high:120,hint:"Ляг боком к камере: должны быть видны плечо, бедро и колено."}
+};
+var lm,stream,on=false,cur,cf,n,st,sm,$=function(i){return document.getElementById(i);};
+function ang(a,b,c){var r=Math.atan2(c.y-b.y,c.x-b.x)-Math.atan2(a.y-b.y,a.x-b.x),d=Math.abs(r*180/Math.PI);return d>180?360-d:d;}
+function stop(){on=false;if(stream){stream.getTracks().forEach(function(t){t.stop();});stream=null;}$("cam").hidden=true;}
+$("cc").onclick=stop;
+window.openCam=async function(q){
+  cur=q;cf=EX[q.ex]||EX.push;n=0;st="up";sm=170;$("ct").textContent="0";$("cam").hidden=false;$("cm").textContent="Загрузка модели…";
+  try{
+    if(!lm){var f=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+      lm=await PoseLandmarker.createFromOptions(f,{baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"},runningMode:"VIDEO",numPoses:1});}
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:false});
+    var v=$("cv");v.srcObject=stream;await v.play();
+    $("cm").textContent=cf.hint+" Цель: "+q.reps;
+    on=true;loop();
+  }catch(e){$("cm").textContent="Не удалось запустить камеру: "+(e&&e.message?e.message:e)+". Нужен https и доступ к камере.";}
+};
+function vis(p,ix){return p[ix[0]].visibility+p[ix[1]].visibility+p[ix[2]].visibility;}
+function loop(){
+  if(!on)return;
+  var v=$("cv");
+  if(v.readyState>=2){
+    var r=lm.detectForVideo(v,performance.now()),p=r.landmarks&&r.landmarks[0];
+    if(p){
+      var vl=vis(p,cf.L),vr=vis(p,cf.R),ix=vl>vr?cf.L:cf.R;
+      if(Math.max(vl,vr)>1.8){
+        sm=sm*0.6+ang(p[ix[0]],p[ix[1]],p[ix[2]])*0.4;
+        if(st==="up"&&sm<cf.low)st="down";
+        else if(st==="down"&&sm>cf.high){st="up";n++;$("ct").textContent=n;if(navigator.vibrate)navigator.vibrate(40);
+          if(n>=cur.reps){var b=document.querySelector('[data-c="'+cur.id+'"]');stop();if(b)b.click();return;}}
+      }
+    }
+  }
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
